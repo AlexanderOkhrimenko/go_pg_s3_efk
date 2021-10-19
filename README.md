@@ -1,3 +1,5 @@
+[![Docker Compose Actions Workflow](https://github.com/AlexanderOkhrimenko/go_pg_s3_efk/actions/workflows/docker-image.yml/badge.svg)](https://github.com/AlexanderOkhrimenko/go_pg_s3_efk/actions/workflows/docker-image.yml)
+
 
 ## Minimal framework for a simple micro service application
 
