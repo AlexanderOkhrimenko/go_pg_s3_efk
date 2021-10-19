@@ -1,0 +1,163 @@
+version: '3.7'
+
+services:
+
+  postgresql:
+    image: postgres
+    hostname: postgresql
+    ports:
+      - "5432:5432"
+    volumes:
+      - database_postgres:/var/lib/postgresql/data
+      - ./postgresql/sql_init//:/docker-entrypoint-initdb.d/
+    restart: unless-stopped
+    depends_on:
+      - fluentd
+    logging:
+      driver: "fluentd"
+      options:
+        fluentd-address: localhost:24224
+        tag: pg
+    env_file:
+      - .env
+    healthcheck:
+      test: ["CMD", "pg_isready", "-q", "-d", "${POSTGRES_DB}", "-U", "${POSTGRES_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+
+  api:
+    build:
+      context: api
+    hostname: api
+    ports:
+      - "8080:8080"
+    restart: always
+    logging:
+      driver: "fluentd"
+      options:
+        fluentd-address: localhost:24224
+        tag: go.api
+    depends_on:
+      - postgresql
+      - minio
+      - fluentd
+      - elasticsearch
+      - kibana
+    env_file:
+      - .env
+
+
+  worker:
+    build:
+      context: worker
+    hostname: worker
+    restart: always
+    logging:
+      driver: "fluentd"
+      options:
+        fluentd-address: localhost:24224
+        tag: go.worker
+    depends_on:
+      - postgresql
+      - api
+      - minio
+      - fluentd
+      - elasticsearch
+      - kibana
+    env_file:
+      - .env
+
+
+
+  minio:
+    image: 'minio/minio'
+    hostname: minio
+    ports:
+      - "9000:9000"
+    volumes:
+      - minio:/data
+    restart: always
+    logging:
+      driver: "fluentd"
+      options:
+        fluentd-address: localhost:24224
+        tag: minio
+    depends_on:
+      - fluentd
+    env_file:
+      - .env
+    command: server /data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+
+
+
+  fluentd:
+    build: ./fluentd
+    #    volumes:
+    #      - ./fluentd/conf:/fluentd/etc
+    links:
+      - "elasticsearch"
+    ports:
+      - "24224:24224"
+      - "24224:24224/udp"
+
+
+  elasticsearch:
+    #image: amazon/opendistro-for-elasticsearch:1.9.0
+    image: library/elasticsearch:7.9.0
+    container_name: elasticsearch
+    expose:
+      - 9200
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    environment:
+      - "cluster.name=docker-cluster"
+      - "network.host=0.0.0.0"
+      - "transport.host=0.0.0.0"
+      - "discovery.zen.ping.unicast.hosts=elasticsearch"
+      - "ES_JAVA_OPTS=-Xms1024m -Xmx1024m"
+      - "discovery.type=single-node"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536
+        hard: 65536
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 4096M
+
+
+  kibana:
+    image: kibana:7.9.0
+    #    image: amazon/opendistro-for-elasticsearch-kibana:1.9.0
+    container_name: kibana
+    links:
+      - "elasticsearch"
+    ports:
+      - "5601:5601"
+    environment:
+      - "ELASTICSEARCH_URL=https://elasticsearch:9200"
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2048M
+    depends_on:
+      - elasticsearch
+      - fluentd
+
+
+volumes:
+  minio:
+  database_postgres:

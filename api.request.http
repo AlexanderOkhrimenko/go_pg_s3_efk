@@ -1,0 +1,11 @@
+GET http://localhost:8080/v1/ping
+
+#######
+
+POST http://localhost:8080/v1/url.insert
+
+{
+  "url" : "http://test.local"
+}
+
+#######
