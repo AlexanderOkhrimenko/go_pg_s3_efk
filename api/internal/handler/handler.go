@@ -1,9 +1,10 @@
 package handler
 
 import (
-	"github.com/gin-gonic/gin"
 	"go_pg_s3_efk/internal/service"
 	"log"
+
+	"github.com/gin-gonic/gin"
 )
 
 type Handler struct {
@@ -24,6 +25,7 @@ func (h *Handler) InitRoutes() *gin.Engine {
 	{
 		v1.POST("/url.insert", h.addUrl)
 		v1.GET("/ping", h.Ping)
+		v1.GET("/ping2", h.Ping2)
 
 	}
 	err := router.Run(":8080")

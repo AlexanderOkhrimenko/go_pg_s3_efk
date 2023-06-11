@@ -1,10 +1,11 @@
 package main
 
 import (
-	"github.com/sirupsen/logrus"
 	handler "go_pg_s3_efk/internal/handler"
 	"go_pg_s3_efk/internal/repository"
 	"go_pg_s3_efk/internal/service"
+
+	"github.com/sirupsen/logrus"
 )
 
 func main() {

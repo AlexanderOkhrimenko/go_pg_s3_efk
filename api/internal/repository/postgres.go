@@ -3,8 +3,9 @@ package repository
 import (
 	"context"
 	"fmt"
-	"github.com/jackc/pgx/v4"
 	"os"
+
+	"github.com/jackc/pgx/v4"
 )
 
 func NewPostgresDB() (*pgx.Conn, error) {
